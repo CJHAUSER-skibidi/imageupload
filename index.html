@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Uploadcare Uploader</title>
+  <script>
+    UPLOADCARE_PUBLIC_KEY = '97a54e86078710d35645'; // Replace with your key
+  </script>
+  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
+</head>
+<body>
+  <h1>Upload Multiple Files (Image, Video, etc)</h1>
+
+  <!-- Uploadcare widget -->
+  <input
+    type="hidden"
+    role="uploadcare-uploader"
+    data-multiple="true"
+    data-images-only="false"
+    data-clearable="true"
+  />
+
+  <!-- Result -->
+  <div id="result"></div>
+
+  <script>
+    const STORAGE_KEY = 'uploadedFiles';
+
+    function saveFile(file) {
+      const files = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      files.push({
+        url: file.cdnUrl,
+        mimeType: file.mimeType
+      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(files));
+    }
+
+    function displayFiles(files) {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<strong>Uploaded Files:</strong><br>';
+      files.forEach(file => {
+        resultDiv.innerHTML += `
+          <a href="${file.url}" target="_blank">${file.url}</a><br>
+          ${file.mimeType.startsWith('image/') ? `<img src="${file.url}" width="200">` : ''}
+          ${file.mimeType.startsWith('video/') ? `<video src="${file.url}" width="300" controls></video>` : ''}
+          <br><br>
+        `;
+      });
+    }
+
+    // Load saved files on page load
+    window.onload = () => {
+      const savedFiles = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      displayFiles(savedFiles);
+    };
+
+    uploadcare.Widget('[role=uploadcare-uploader]').onUploadComplete(function(fileGroup) {
+      if (fileGroup.files) {
+        fileGroup.files().then(function(files) {
+          files.forEach(function(filePromise) {
+            filePromise.then(function(file) {
+              saveFile(file);
+              const savedFiles = JSON.parse(localStorage.getItem(STORAGE_KEY));
+              displayFiles(savedFiles);
+            });
+          });
+        });
+      } else {
+        // Handle single file uploads (not grouped)
+        saveFile(fileGroup);
+        const savedFiles = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        displayFiles(savedFiles);
+      }
+    });
+  </script>
+</body>
+</html>
